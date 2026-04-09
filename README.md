@@ -1,1 +1,547 @@
-# game2004
+# game2004 
+!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>GAURAV WORLDCRAFT | Ultimate Edition</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Poppins:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary: #ff9d00; 
+            --secondary: #00f3ff; 
+            --bg-dark: #0a0a0a;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; scroll-behavior: smooth; user-select: none; }
+        
+        body { 
+            font-family: 'Poppins', sans-serif; 
+            background-color: var(--bg-dark); 
+            color: white; 
+            overflow: hidden;
+        }
+
+        #website-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; background: var(--bg-dark); overflow-y: auto; transition: transform 0.8s; }
+        
+        nav { display: flex; justify-content: space-between; align-items: center; padding: 20px 5%; position: sticky; top: 0; z-index: 500; background: rgba(10, 10, 10, 0.95); border-bottom: 1px solid var(--border); backdrop-filter: blur(10px); }
+        .logo { font-family: 'Orbitron'; font-size: 1.5rem; font-weight: 900; letter-spacing: 1px; color: white; text-transform: uppercase; } .logo span { color: var(--primary); }
+        .nav-links { display: flex; gap: 30px; } .nav-links a { text-decoration: none; color: #ccc; font-weight: 500; transition: 0.3s; font-size: 0.9rem; } .nav-links a:hover { color: var(--primary); }
+        .login-btn { padding: 8px 25px; background: transparent; border: 2px solid var(--primary); color: var(--primary); font-weight: bold; border-radius: 5px; cursor: pointer; transition: 0.3s; } .login-btn:hover { background: var(--primary); color: black; }
+
+        header { height: 80vh; display: flex; align-items: center; padding: 0 5%; background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.9)), url('https://images.unsplash.com/photo-1555680202-c86f0e12f086?q=80&w=2070&auto=format&fit=crop'); background-size: cover; background-position: center; position: relative; }
+        .hero-content { max-width: 800px; animation: fadeInUp 1s ease-out; }
+        h1 { font-family: 'Orbitron'; font-size: clamp(2.5rem, 6vw, 5rem); line-height: 1.1; margin-bottom: 20px; } h1 span { color: var(--primary); text-shadow: 0 0 30px rgba(255, 157, 0, 0.5); }
+        .tagline { font-size: 1.2rem; color: #ddd; margin-bottom: 40px; border-left: 4px solid var(--secondary); padding-left: 20px; }
+        .btn-play { padding: 18px 60px; font-size: 1.5rem; font-family: 'Orbitron'; font-weight: bold; background: var(--primary); color: black; border: none; cursor: pointer; clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); transition: 0.3s; box-shadow: 0 0 40px rgba(255, 157, 0, 0.3); text-transform: uppercase; } .btn-play:hover { transform: scale(1.05); background: white; box-shadow: 0 0 60px white; }
+
+        .container { padding: 80px 5%; border-top: 1px solid var(--border); }
+        .section-title { font-family: 'Orbitron'; font-size: 2.5rem; text-align: center; margin-bottom: 50px; } .section-title span { color: var(--secondary); }
+
+        .skins-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 30px; }
+        .skin-card { background: var(--card-bg); border: 1px solid var(--border); padding: 20px; border-radius: 15px; text-align: center; transition: 0.3s; } .skin-card:hover { transform: translateY(-10px); border-color: var(--primary); }
+        .skin-img { height: 250px; margin-bottom: 20px; border-radius: 10px; overflow: hidden; border: 1px solid #333; } .skin-img img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s; } .skin-card:hover .skin-img img { transform: scale(1.1); }
+        .btn-buy { background: var(--secondary); border: none; padding: 10px 20px; width: 100%; font-weight: bold; cursor: pointer; margin-top: 10px; }
+
+        #map-section { background: rgba(0,0,0,0.3); }
+        #map-container { height: 500px; width: 100%; border-radius: 20px; border: 2px solid var(--primary); overflow: hidden; box-shadow: 0 0 30px rgba(0,0,0,0.5); position: relative; }
+        #map { width: 100%; height: 100%; }
+
+        .leaderboard-box { max-width: 800px; margin: 0 auto; background: var(--card-bg); border-radius: 15px; overflow: hidden; border: 1px solid var(--border); }
+        .row { display: flex; justify-content: space-between; padding: 20px; border-bottom: 1px solid var(--border); } .row.head { background: rgba(255,255,255,0.1); font-weight: bold; color: var(--primary); font-family: 'Orbitron'; } .rank { width: 50px; font-weight: bold; color: var(--secondary); }
+        .news-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; } .news-card { background: #111; padding: 30px; border-left: 3px solid var(--primary); } .date { color: var(--secondary); font-size: 0.9rem; font-weight: bold; margin-bottom: 5px; font-family: 'Orbitron'; }
+        
+        footer { background: black; padding: 50px 5%; text-align: center; color: #555; border-top: 1px solid #222; }
+
+        #game-wrapper { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000; visibility: hidden; opacity: 0; transition: opacity 1s; }
+        #loader { position: fixed; inset: 0; background: black; z-index: 2000; display: none; flex-direction: column; justify-content: center; align-items: center; }
+        .loading-text { font-family: 'Orbitron'; font-size: 1.5rem; margin-bottom: 20px; animation: blink 1s infinite; }
+        .bar-bg { width: 300px; height: 5px; background: #333; } .bar-fill { height: 100%; width: 0%; background: var(--primary); transition: width 1.5s ease-in-out; }
+
+        #crosshair { position: absolute; top: 50%; left: 50%; width: 20px; height: 20px; transform: translate(-50%, -50%); pointer-events: none; z-index: 10; transition: 0.1s;}
+        #crosshair::before, #crosshair::after { content: ''; position: absolute; background: rgba(255,255,255,0.8); } #crosshair::before { top: 9px; left: 0; width: 20px; height: 2px; } #crosshair::after { top: 0; left: 9px; width: 2px; height: 20px; }
+        #crosshair.hit { transform: translate(-50%, -50%) scale(1.5) rotate(45deg); filter: hue-rotate(90deg) drop-shadow(0 0 10px red); }
+        
+        #hud-top { position: absolute; top: 20px; left: 20px; font-family: 'Orbitron'; }
+        .stat-box { background: rgba(0,0,0,0.5); padding: 5px 15px; border-radius: 5px; border: 1px solid var(--border); margin-bottom: 5px; color: var(--secondary); }
+        .safe-mode-badge { color: #00ff00; border-color: #00ff00; display: none; }
+
+        #minimap-container { position: absolute; top: 20px; right: 20px; width: 150px; height: 150px; background: rgba(0, 0, 0, 0.8); border: 2px solid var(--primary); border-radius: 50%; overflow: hidden; display: flex; justify-content: center; align-items: center; }
+        #minimap-canvas { width: 100%; height: 100%; }
+
+        #inventory-ui { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 600px; height: 450px; background: rgba(10, 10, 10, 0.95); border: 2px solid var(--primary); border-radius: 10px; display: none; flex-direction: column; padding: 20px; z-index: 50; }
+        #inventory-ui h2 { text-align: center; color: var(--primary); font-family: 'Orbitron'; margin-bottom: 20px; }
+        .inv-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; overflow-y: auto; padding-right: 10px; }
+        /* Scrollbar customization for inventory */
+        .inv-grid::-webkit-scrollbar { width: 8px; }
+        .inv-grid::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 4px; }
+        
+        .inv-slot { height: 80px; background: #222; border: 1px solid #444; cursor: pointer; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: 0.2s; } .inv-slot:hover { border-color: var(--secondary); background: #333; transform: scale(1.05); }
+        .close-inv { margin-top: 20px; padding: 10px; background: red; border: none; color: white; cursor: pointer; font-weight: bold; }
+
+        #hotbar { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 15px; border: 1px solid #444; }
+        .slot { width: 50px; height: 50px; border: 2px solid #555; border-radius: 8px; cursor: pointer; transition: 0.2s; position: relative;} 
+        .slot.active { border-color: var(--primary); box-shadow: 0 0 15px var(--primary); transform: scale(1.1); }
+
+        .mobile-controls { display: none; }
+        @media (hover: none) and (pointer: coarse) {
+            .mobile-controls { display: block; }
+            #zone-move, #zone-look { position: absolute; top: 0; width: 50%; height: 100%; z-index: 5; } #zone-move { left: 0; } #zone-look { left: 50%; }
+            .g-btn { position: absolute; width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.2); color: white; display: flex; justify-content: center; align-items: center; font-weight: bold; backdrop-filter: blur(5px); z-index: 20; font-size: 10px; }
+            #btn-jump { bottom: 100px; right: 20px; border-color: var(--primary); color: var(--primary); } #btn-place { bottom: 180px; right: 20px; } #btn-break { bottom: 180px; right: 90px; border-color: red; color: red; }
+            #btn-fly { bottom: 100px; right: 90px; border-color: #00ff00; color: #00ff00; }
+            #btn-bag { bottom: 20px; left: 20px; width: 50px; height: 50px; background: #333; z-index: 30; }
+            #inventory-ui { width: 90%; height: 80%; }
+        }
+
+        @keyframes fadeInUp { from { opacity:0; transform: translateY(50px); } to { opacity:1; transform: translateY(0); } } @keyframes blink { 50% { opacity: 0.5; } }
+    </style>
+</head>
+<body>
+
+    <div id="website-container">
+        <nav>
+            <div class="logo">GAURAV <span>WORLDCRAFT</span></div>
+            <div class="nav-links"><a href="#store">STORE</a><a href="#map-section">LIVE MAP</a><a href="#leaderboard">LEADERBOARD</a></div>
+            <button class="login-btn" onclick="alert('Welcome back, Sourav!')">LOGIN</button>
+        </nav>
+
+        <header>
+            <div class="hero-content">
+                <div style="color:var(--primary); font-weight:bold; letter-spacing:3px; margin-bottom:10px;">VERSION 4.0 ULTIMATE</div>
+                <h1>WELCOME TO <br> <span>GAURAV ULTIMATE WORLD</span></h1>
+                <p class="tagline">BUILD. DOUBLE JUMP. FLY. SURVIVE.</p>
+                <button class="btn-play" onclick="launchGame()">PLAY NOW <i class="fas fa-play" style="margin-left:15px"></i></button>
+            </div>
+        </header>
+
+        <div id="store" class="container">
+            <h2 class="section-title">CHARACTER <span>STORE</span></h2>
+            <div class="skins-grid">
+                <div class="skin-card">
+                    <div class="skin-img"><img src="https://images.unsplash.com/photo-1636653970631-096d227c2642?auto=format&fit=crop&q=80&w=500" alt="Ana"></div>
+                    <h3>ANA</h3><p style="color:#888;">The Explorer</p><button class="btn-buy">EQUIPPED</button>
+                </div>
+                <div class="skin-card">
+                    <div class="skin-img"><img src="https://images.unsplash.com/photo-1616084403169-231a486b86d6?auto=format&fit=crop&q=80&w=500" alt="Bella"></div>
+                    <h3>BELLA</h3><p style="color:#888;">Master Builder</p><button class="btn-buy" style="background:#333;">SELECT</button>
+                </div>
+                <div class="skin-card">
+                    <div class="skin-img"><img src="https://images.unsplash.com/photo-1628260412297-a3377e45006f?auto=format&fit=crop&q=80&w=500" alt="Raj"></div>
+                    <h3>RAJ</h3><p style="color:#888;">Cyber Warrior</p><button class="btn-buy" style="background:#333;">LOCKED</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="map-section" class="container">
+            <h2 class="section-title">LIVE <span>SERVER MAP</span></h2>
+            <p style="text-align:center; color:#ccc; margin-bottom:20px;">Active Servers in NCR Region</p>
+            <div id="map-container"><div id="map"></div></div>
+        </div>
+
+        <div id="leaderboard" class="container">
+            <h2 class="section-title">TOP <span>BUILDERS</span></h2>
+            <div class="leaderboard-box">
+                <div class="row head"><div class="rank">#</div><div style="flex:1">PLAYER</div><div>SCORE</div></div>
+                <div class="row"><div class="rank" style="color:gold">1</div><div style="flex:1">SOURAV YADAV <i class="fas fa-check-circle" style="color:var(--secondary)"></i></div><div>999,999</div></div>
+                <div class="row"><div class="rank" style="color:silver">2</div><div style="flex:1">CHIRAG PANDIT</div><div>854,200</div></div>
+                <div class="row"><div class="rank" style="color:#cd7f32">3</div><div style="flex:1">PRERNA</div><div>720,150</div></div>
+            </div>
+        </div>
+
+        <div id="news" class="container">
+            <h2 class="section-title">LATEST <span>NEWS</span></h2>
+            <div class="news-grid">
+                <div class="news-card"><div class="date">18 JANUARY 2026</div><h3>Double Jump Mechanics</h3><p style="color:#ccc; margin-top:10px;">Hit spacebar twice to activate the new anti-gravity jump boost!</p></div>
+                <div class="news-card"><div class="date">01 JANUARY 2026</div><h3>Expanded Block Catalog</h3><p style="color:#ccc; margin-top:10px;">Build with Lava, Water, Diamond, Dirt and more.</p></div>
+            </div>
+        </div>
+
+        <footer>
+            <h2>GAURAV WORLDCRAFT</h2>
+            <p>&copy; 2026 Gaurav Gaming Studios. All Rights Reserved.</p>
+            <div style="margin-top:20px; font-size:1.5rem;">
+                <a href="#" style="color:white; text-decoration:none; margin:0 10px;"><i class="fab fa-discord"></i></a>
+                <a href="https://youtube.com/@vibexoffical-lm3kb?si=vrvORsFF9w8-m39I" target="_blank" style="color:white; text-decoration:none; margin:0 10px;"><i class="fab fa-youtube"></i></a>
+                <a href="https://www.instagram.com/_wordsfromtears?igsh=M3k1emFwdHF5N3pp&utm_source=qr" target="_blank" style="color:white; text-decoration:none; margin:0 10px;"><i class="fab fa-instagram"></i></a>
+            </div>
+        </footer>
+    </div>
+
+    <div id="loader"><div class="loading-text">LOADING GAURAV WORLDCRAFT...</div><div class="bar-bg"><div class="bar-fill" id="progress"></div></div></div>
+
+    <div id="game-wrapper">
+        <div id="crosshair"></div>
+        <div id="hud-top">
+            <div class="stat-box">TIME: <span id="game-time">12:00</span></div>
+            <div class="stat-box safe-mode-badge" id="safe-mode-ui">FLY MODE: ON</div>
+            <div class="stat-box" id="jump-ui" style="color:#ffaa00;">JUMPS: 2/2</div>
+            <div class="stat-box">FPS: 60</div>
+            <div class="stat-box" id="server-status" style="color:#00ff00; display:none;">ONLINE</div> 
+        </div>
+        <div id="minimap-container"><canvas id="minimap-canvas" width="150" height="150"></canvas></div>
+        <div id="hotbar"></div>
+        <div id="inventory-ui">
+            <h2>STORAGE & BLOCKS</h2>
+            <div class="inv-grid" id="inv-grid"></div>
+            <button class="close-inv" onclick="toggleInventory()">CLOSE</button>
+        </div>
+        <div class="mobile-controls">
+            <div id="zone-move"></div><div id="zone-look"></div>
+            <div id="btn-jump" class="g-btn">JUMP</div><div id="btn-place" class="g-btn">ADD</div><div id="btn-break" class="g-btn">DEL</div>
+            <div id="btn-fly" class="g-btn" onclick="toggleFly()">FLY</div><div id="btn-bag" class="g-btn" onclick="toggleInventory()">BAG</div>
+        </div>
+    </div>
+
+    <script>
+        // --- MULTIPLAYER SETUP ---
+        const SERVER_URL = "http://127.0.0.1:5000";
+        let socket = null; const otherPlayers = {};
+        if (typeof io !== 'undefined') {
+            try {
+                socket = io(SERVER_URL); document.getElementById('server-status').style.display = 'block';
+                function createPlayerAvatar() {
+                    const group = new THREE.Group();
+                    const body = new THREE.Mesh(new THREE.BoxGeometry(2, 3, 2), new THREE.MeshStandardMaterial({ color: 0x222222 })); body.position.y = 1.5;
+                    const head = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.5, 1.5), new THREE.MeshStandardMaterial({ color: 0xff0055 })); head.position.y = 3.8;
+                    group.add(body); group.add(head); return group;
+                }
+                socket.on('current_players', (players) => { for (let id in players) { if (id !== socket.id && scene && !otherPlayers[id]) { let av = createPlayerAvatar(); scene.add(av); otherPlayers[id] = av; } } });
+                socket.on('new_player', (data) => { if(scene) { let av = createPlayerAvatar(); av.position.set(data.pos.x, data.pos.y - 1.5, data.pos.z); scene.add(av); otherPlayers[data.id] = av; } });
+                socket.on('player_disconnected', (id) => { if (otherPlayers[id] && scene) { scene.remove(otherPlayers[id]); delete otherPlayers[id]; } });
+                socket.on('player_moved', (data) => { if (otherPlayers[data.id]) { otherPlayers[data.id].position.set(data.pos.x, data.pos.y - 1.5, data.pos.z); otherPlayers[data.id].rotation.y = data.pos.ry; } });
+                socket.on('world_updated', () => { /* Sync blocks if backend handles it */ });
+            } catch(e) { console.log("Offline Mode"); }
+        }
+
+        // --- 1. SOUND SYSTEM ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+            
+            if(type==='jump') {
+                osc.frequency.setValueAtTime(200, now); osc.frequency.exponentialRampToValueAtTime(400, now + 0.1);
+                gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
+            } else if(type==='place') {
+                osc.frequency.setValueAtTime(600, now); osc.frequency.exponentialRampToValueAtTime(300, now + 0.05);
+                gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                osc.start(now); osc.stop(now + 0.05);
+            } else if(type==='break') {
+                osc.type = 'square'; osc.frequency.setValueAtTime(100, now); osc.frequency.exponentialRampToValueAtTime(50, now + 0.1);
+                gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
+            } else if(type==='shoot') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(100, now + 0.2);
+                gain.gain.setValueAtTime(0.5, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now); osc.stop(now + 0.2);
+            }
+        }
+
+        // --- 2. WEBSITE MAP ---
+        window.addEventListener('load', () => {
+            const map = L.map('map').setView([28.4500, 76.9500], 9);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+            const locs = [
+                {n:"DHARUHERA (Gaurav Base)", lat:28.2168, lng:76.7909, p:45},
+                {n:"BHIWADI OUTPOST", lat:28.2057, lng:76.8356, p:32},
+                {n:"GURGAON SQUAD", lat:28.4595, lng:77.0266, p:128},
+                {n:"DELHI HQ (SERVER 1)", lat:28.7041, lng:77.1025, p:500}
+            ];
+            locs.forEach(l => L.marker([l.lat, l.lng]).addTo(map).bindPopup(`<div style='font-family:Orbitron; text-align:center'><b style='color:#ff9d00'>${l.n}</b><br>ONLINE: ${l.p}</div>`));
+        });
+
+        // --- 3. GAME VARIABLES ---
+        let camera, scene, renderer, raycaster;
+        let objects = [], particles = [];
+        let moveForward=false, moveBackward=false, moveLeft=false, moveRight=false;
+        let velocity = new THREE.Vector3(); 
+        let flyMode = false, inventoryOpen = false;
+        let prevTime = performance.now(); let frames = 0; 
+        let currentSlot = 0, sprint = false;
+        let sunSphere, light, timeOfDay = 0;
+        
+        // JUMP SYSTEM VARIABLES
+        let jumpCount = 0; const MAX_JUMPS = 2;
+
+        // EXPANDED BLOCKS ARRAY
+        const blocks = [
+            { name: "Grass", color: 0x567d46 }, 
+            { name: "Dirt", color: 0x5C4033 },
+            { name: "Stone", color: 0x808080 }, 
+            { name: "Sand", color: 0xC2B280 },
+            { name: "Wood", color: 0x8B4513 }, 
+            { name: "Leaves", color: 0x228B22 },
+            { name: "Glass", color: 0xaaddff, type: 'glass' }, 
+            { name: "Water", color: 0x0000aa, type: 'glass' },
+            { name: "Lava", color: 0xff4500, type: 'neon' },
+            { name: "Neon Blue", color: 0x00f3ff, type: 'neon' }, 
+            { name: "Neon Red", color: 0xff0000, type: 'neon' },
+            { name: "Gold", color: 0xffd700 }, 
+            { name: "Diamond", color: 0xb9f2ff, type: 'glass' },
+            { name: "Bedrock", color: 0x222222 }, 
+            { name: "Torch", color: 0xffaa00, type: 'torch' },
+            { name: "Laser Blaster", color: 0xff0055, type: 'weapon' }
+        ];
+
+        // --- 4. INIT GAME ---
+        function launchGame() {
+            document.getElementById('website-container').style.transform = 'translateY(-100%)';
+            const loader = document.getElementById('loader');
+            const progress = document.getElementById('progress');
+            loader.style.display = 'flex';
+            setTimeout(() => progress.style.width = '100%', 1200);
+            setTimeout(() => {
+                loader.style.opacity = '0';
+                setTimeout(() => loader.style.display = 'none', 500);
+                document.getElementById('game-wrapper').style.visibility = 'visible';
+                document.getElementById('game-wrapper').style.opacity = '1';
+                initThree(); animate();
+            }, 1500);
+        }
+
+        function initThree() {
+            scene = new THREE.Scene(); scene.background = new THREE.Color(0x87CEEB); scene.fog = new THREE.Fog(0x87CEEB, 10, 500);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+            light = new THREE.DirectionalLight(0xffffff, 1); light.position.set(50, 200, 100); light.castShadow=true; scene.add(light);
+            sunSphere = new THREE.Mesh(new THREE.SphereGeometry(10,16,16), new THREE.MeshBasicMaterial({color:0xffff00})); scene.add(sunSphere);
+            
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000); 
+            camera.position.set(0, 10, 20); camera.rotation.order = 'YXZ';
+
+            const floor = new THREE.Mesh(new THREE.PlaneGeometry(1000,1000), new THREE.MeshStandardMaterial({color:0x223322}));
+            floor.rotateX(-Math.PI/2); floor.receiveShadow=true; scene.add(floor); objects.push(floor);
+
+            renderer = new THREE.WebGLRenderer({antialias:true}); renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled=true; document.getElementById('game-wrapper').appendChild(renderer.domElement);
+            
+            raycaster = new THREE.Raycaster();
+            setupInputs(); initInventory(); updateHotbar();
+        }
+
+        // --- 5. INVENTORY & PARTICLES ---
+        function initInventory() {
+            const grid = document.getElementById('inv-grid');
+            blocks.forEach((b, i) => {
+                const div = document.createElement('div');
+                div.className = 'inv-slot'; 
+                div.style.borderLeft = `5px solid #${b.color.toString(16)}`;
+                div.innerHTML = `<div style="width:25px; height:25px; background:#${b.color.toString(16)}; margin-bottom:5px; border-radius:3px;"></div><span style="color:white; font-size:10px; font-family:'Orbitron'; text-align:center;">${b.name}</span>`;
+                div.onclick = () => { currentSlot = i; updateHotbar(); toggleInventory(); };
+                grid.appendChild(div);
+            });
+        }
+        function toggleInventory() {
+            inventoryOpen = !inventoryOpen;
+            document.getElementById('inventory-ui').style.display = inventoryOpen ? 'flex' : 'none';
+            if(inventoryOpen) document.exitPointerLock(); else document.body.requestPointerLock();
+        }
+        function updateHotbar() {
+            const hb = document.getElementById('hotbar'); hb.innerHTML = '';
+            for(let i=0; i<6; i++) {
+                const bIdx = (currentSlot + i) % blocks.length; const b = blocks[bIdx];
+                const div = document.createElement('div'); div.className = i===0 ? 'slot active' : 'slot';
+                div.style.backgroundColor = '#' + b.color.toString(16); div.onclick = () => { currentSlot = bIdx; updateHotbar(); };
+                hb.appendChild(div);
+            }
+        }
+        function spawnParticles(pos, color) {
+            for(let i=0; i<15; i++) { 
+                const p = new THREE.Mesh(new THREE.BoxGeometry(0.5,0.5,0.5), new THREE.MeshBasicMaterial({color:color}));
+                p.position.copy(pos).add(new THREE.Vector3((Math.random()-.5)*2, (Math.random()-.5)*2, (Math.random()-.5)*2));
+                scene.add(p);
+                particles.push({ mesh: p, life: 1.0, vel: new THREE.Vector3((Math.random()-.5)*15, Math.random()*15, (Math.random()-.5)*15) });
+            }
+        }
+
+        // --- 6. MINI-MAP & FLY ---
+        function updateMiniMap() {
+            const ctx = document.getElementById('minimap-canvas').getContext('2d');
+            const w = 150, h = 150; ctx.clearRect(0,0,w,h);
+            ctx.fillStyle = '#00ff00'; ctx.beginPath(); ctx.arc(w/2, h/2, 3, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#ffffff';
+            objects.forEach(obj => {
+                if(obj === objects[0]) return;
+                const dx = obj.position.x - camera.position.x; const dz = obj.position.z - camera.position.z;
+                if(Math.abs(dx) < 50 && Math.abs(dz) < 50) ctx.fillRect((w/2) + dx, (h/2) + dz, 2, 2);
+            });
+        }
+        window.toggleFly = function() {
+            flyMode = !flyMode; document.getElementById('safe-mode-ui').style.display = flyMode ? 'block' : 'none'; velocity.y = 0;
+        }
+
+        // --- 7. INPUTS, LOGIC & SHOOTING ---
+        function handleJump() {
+            if (flyMode) { 
+                velocity.y = 100; 
+            } else if (jumpCount < MAX_JUMPS) { 
+                velocity.y = 250; 
+                playSound('jump'); 
+                jumpCount++; 
+                document.getElementById('jump-ui').innerText = `JUMPS: ${MAX_JUMPS - jumpCount}/${MAX_JUMPS}`;
+            }
+        }
+
+        function setupInputs() {
+            document.addEventListener('keydown', e => {
+                if(inventoryOpen) return;
+                if(e.code=='KeyW') moveForward=true; if(e.code=='KeyS') moveBackward=true;
+                if(e.code=='KeyA') moveLeft=true; if(e.code=='KeyD') moveRight=true;
+                if(e.code=='ShiftLeft') { sprint = true; if(flyMode) velocity.y = -100; }
+                if(e.code=='Space') { handleJump(); }
+                if(e.code=='KeyF') toggleFly(); if(e.code=='KeyE') toggleInventory();
+            });
+            document.addEventListener('keyup', e => {
+                if(e.code=='KeyW') moveForward=false; if(e.code=='KeyS') moveBackward=false;
+                if(e.code=='KeyA') moveLeft=false; if(e.code=='KeyD') moveRight=false;
+                if(e.code=='ShiftLeft') sprint = false;
+                if(flyMode && (e.code=='Space' || e.code=='ShiftLeft')) velocity.y = 0;
+            });
+            document.addEventListener('mousedown', e => {
+                if(e.target.closest('.g-btn') || e.target.closest('#inventory-ui') || inventoryOpen) return;
+                document.body.requestPointerLock();
+                if(e.button===0) doRay(true); else if(e.button===2) doRay(false);
+            });
+            document.addEventListener('mousemove', e => {
+                if(document.pointerLockElement) {
+                    camera.rotation.y -= e.movementX*0.002; camera.rotation.x -= e.movementY*0.002;
+                    camera.rotation.x = Math.max(-1.5, Math.min(1.5, camera.rotation.x));
+                }
+            });
+            
+            // MOBILE JUMP BUTTON LISTENER
+            document.getElementById('btn-jump').addEventListener('touchstart', (e) => { e.preventDefault(); handleJump(); });
+            
+            const mz = document.getElementById('zone-move'), lz = document.getElementById('zone-look');
+            let ly;
+            mz.addEventListener('touchmove', e => { moveForward=(e.touches[0].pageY < window.innerHeight/2 - 20); moveBackward=!moveForward; });
+            mz.addEventListener('touchend', () => moveForward=moveBackward=false);
+            lz.addEventListener('touchstart', e => ly=e.touches[0].pageY);
+            lz.addEventListener('touchmove', e => { camera.rotation.y -= 0.05; ly=e.touches[0].pageY; });
+        }
+
+        function fireLaser() {
+            playSound('shoot');
+            const material = new THREE.LineBasicMaterial({ color: 0xff0055, linewidth: 5 });
+            const points = [new THREE.Vector3(0, -1, -2).applyMatrix4(camera.matrixWorld)];
+            
+            raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
+            const hits = raycaster.intersectObjects(objects);
+            let endPoint = new THREE.Vector3();
+            
+            if(hits.length > 0) {
+                endPoint.copy(hits[0].point);
+                if(hits[0].object !== objects[0]) {
+                    setTimeout(() => {
+                        playSound('break'); spawnParticles(hits[0].object.position, hits[0].object.material.color || 0xff0055);
+                        scene.remove(hits[0].object); objects.splice(objects.indexOf(hits[0].object), 1);
+                        const ch = document.getElementById('crosshair'); ch.classList.add('hit'); setTimeout(() => ch.classList.remove('hit'), 150);
+                        if(socket) socket.emit('block_action', { action: 'update' });
+                    }, 50);
+                } else { spawnParticles(hits[0].point, 0xff0055); }
+            } else { raycaster.ray.at(100, endPoint); }
+            
+            points.push(endPoint); const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), material);
+            scene.add(line); setTimeout(() => scene.remove(line), 100);
+        }
+
+        function doRay(place) {
+            const data = blocks[currentSlot];
+            if(place && data.type === 'weapon') { fireLaser(); return; }
+
+            raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
+            const hits = raycaster.intersectObjects(objects);
+            if(hits.length>0) {
+                if(place) {
+                    let mesh, geo = new THREE.BoxGeometry(5,5,5), mat = new THREE.MeshStandardMaterial({color:data.color});
+                    if(data.type==='torch') { geo = new THREE.CylinderGeometry(0.5,0.5,2.5,8); mat = new THREE.MeshBasicMaterial({color:0xffaa00}); }
+                    else if(data.type==='glass') mat = new THREE.MeshPhysicalMaterial({color:data.color, transparent:true, opacity:0.6}); // Updated opacity for water/diamond
+                    else if(data.type==='neon') mat = new THREE.MeshStandardMaterial({color:data.color, emissive:data.color});
+                    
+                    mesh = new THREE.Mesh(geo, mat);
+                    if(data.type==='torch') mesh.add(new THREE.PointLight(0xff6600,1,15).translateY(1.5));
+                    else { mesh.castShadow=true; mesh.receiveShadow=true; }
+                    
+                    mesh.position.copy(hits[0].point).add(hits[0].face.normal);
+                    if(data.type!=='torch') mesh.position.divideScalar(5).floor().multiplyScalar(5).addScalar(2.5);
+                    scene.add(mesh); objects.push(mesh); playSound('place');
+                    if(socket) socket.emit('block_action', { action: 'update' });
+                } else if(hits[0].object !== objects[0]) {
+                    playSound('break');
+                    spawnParticles(hits[0].object.position, hits[0].object.material.color);
+                    scene.remove(hits[0].object); objects.splice(objects.indexOf(hits[0].object), 1);
+                    if(socket) socket.emit('block_action', { action: 'update' });
+                }
+            }
+        }
+
+        // --- 8. LOOP ---
+        function animate() {
+            requestAnimationFrame(animate);
+            frames++;
+            const dt = (performance.now()-prevTime)/1000; prevTime=performance.now();
+            
+            for(let i=particles.length-1; i>=0; i--) {
+                let p = particles[i]; p.life -= dt*2;
+                p.mesh.position.add(p.vel.clone().multiplyScalar(dt)); p.vel.y -= 20*dt;
+                p.mesh.rotation.x += 2*dt; p.mesh.scale.setScalar(p.life);
+                if(p.life <= 0) { scene.remove(p.mesh); particles.splice(i, 1); }
+            }
+
+            timeOfDay += dt*5; if(timeOfDay>360) timeOfDay=0;
+            const rad = THREE.Math.degToRad(timeOfDay);
+            sunSphere.position.set(Math.cos(rad)*200, Math.sin(rad)*200, 0);
+            if(Math.sin(rad)>0) { scene.background.setHex(0x87CEEB); light.intensity=1; document.getElementById('game-time').innerText="DAY"; }
+            else { scene.background.setHex(0x050510); light.intensity=0; document.getElementById('game-time').innerText="NIGHT"; }
+
+            velocity.x -= velocity.x * 10 * dt; velocity.z -= velocity.z * 10 * dt;
+            if(!flyMode) velocity.y -= 9.8 * 60 * dt;
+
+            let dir = new THREE.Vector3();
+            dir.z = Number(moveForward)-Number(moveBackward); dir.x = Number(moveRight)-Number(moveLeft); dir.normalize();
+            
+            const speed = sprint ? 800 : 400;
+            if(moveForward||moveBackward) velocity.z -= dir.z * speed * dt;
+            if(moveLeft||moveRight) velocity.x -= dir.x * speed * dt;
+
+            // DYNAMIC CAMERA FOV FOR SPRINTING
+            if (sprint) { camera.fov += (90 - camera.fov) * 0.1; } 
+            else { camera.fov += (75 - camera.fov) * 0.1; }
+            camera.updateProjectionMatrix();
+
+            camera.translateX(-velocity.x * dt); camera.translateZ(-velocity.z * dt); camera.position.y += velocity.y * dt;
+            
+            // GROUND COLLISION & JUMP RESET
+            if(camera.position.y <= 10) { 
+                velocity.y = 0; 
+                camera.position.y = 10; 
+                if (jumpCount > 0 && !flyMode) {
+                    jumpCount = 0; // Reset jumps when hitting ground
+                    document.getElementById('jump-ui').innerText = `JUMPS: 2/2`;
+                }
+            }
+
+            if (socket && frames % 3 === 0) {
+                socket.emit('move', { x: camera.position.x, y: camera.position.y, z: camera.position.z, ry: camera.rotation.y });
+            }
+
+            updateMiniMap();
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>
